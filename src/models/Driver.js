@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+//This is the Schema of the Driver that is used to authentication.
 const driverSchema = new mongoose.Schema({
     name : {
         type : String,
