@@ -1,4 +1,4 @@
-import Driver from "../models/Driver";
+import Driver from "../models/Driver.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
@@ -18,7 +18,7 @@ export const registerDriver = async(req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        //create ans save the new driver
+//create and save the new driver
         const newDriver = new Driver({
             name, 
             phone,
@@ -26,7 +26,7 @@ export const registerDriver = async(req, res) => {
         });
         await newDriver.save();
 
-        res.send(201).josn({message : 'Driver registered successfully!'});
+        res.status(201).json({message : 'Driver registered successfully!'});
     }catch (error){
         console.log(error);
         res.status(500).json({message : 'Server error during registration'});
@@ -39,7 +39,7 @@ export const logindriver = async (req, res) => {
         const {phone, password} = req.body;
 
         //Find the driver
-        const driver = await Driver.findOne(({phone}));
+        const driver = await Driver.findOne({phone});
         if(!driver){
             return res.status(400).json({message: 'Invalid phone number or password'});
         }
@@ -49,7 +49,7 @@ export const logindriver = async (req, res) => {
             return res.status(400).json({message:'Invalid phone number or password'});
         }
 
-        //Generate a JWT Token (This keeps the drier logged in)
+        //Generate a JWT Token (This keeps the driver logged in)
         //We use a fallback secret key declared in .env
         const jwtSecret = process.env.JWT_SECRET || 'super_secret_fallback_key';
         const token = jwt.sign({id : driver._id}, jwtSecret, {expiresIn: '7d'});
@@ -66,6 +66,6 @@ export const logindriver = async (req, res) => {
         });
     }catch(error){
         console.log(error);
-        res.send(500).json({message : 'Server error during login'});
+        res.status(500).json({message : 'Server error during login'});
     }
 }
