@@ -8,7 +8,7 @@ export const registerDriver = async(req, res) => {
     try {
         const {name , phone, password} = req.body;
 
-        //check if driver already exists
+        //check if driver already exists.
         const existingDriver = await Driver.findOne({phone});
         if(existingDriver){
             return res.status(400).json({message : 'Driver with this phone already exists'});
