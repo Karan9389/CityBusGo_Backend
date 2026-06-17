@@ -14,10 +14,11 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
 //setting up middeleware
 app.use(cors({
-    origin : 'https://citybusgo.netlify.app/',
+    origin : frontendOrigin,
     methods : ['GET', 'POST', 'PUT', 'DELETE']
 }));
 app.use(express.json());
