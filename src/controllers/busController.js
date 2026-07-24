@@ -15,10 +15,12 @@ export const searchBuses = async (req, res) => {
     const routes = await Route.find().populate('driver', 'name phone');
 
     const matchingBuses = routes.filter(route => {
-      const stopsLower = route.stops.map(s => s.toLowerCase());
-      const hasStart = stopsLower.some(s => s.includes(startLower) || startLower.includes(s));
-      const hasDest = stopsLower.some(s => s.includes(destLower) || destLower.includes(s));
-      return hasStart && hasDest;
+      const stopsLower = route.stops.map(s => s.toLowerCase().trim());
+      const startIndex = stopsLower.findIndex(s => s.includes(startLower) || startLower.includes(s));
+      const destIndex = stopsLower.findIndex(s => s.includes(destLower) || destLower.includes(s));
+      
+      // Valid route if both stops exist and origin is before destination (or equal if user entered exact stop name match)
+      return startIndex !== -1 && destIndex !== -1 && startIndex < destIndex;
     });
 
     const result = matchingBuses.map(r => ({

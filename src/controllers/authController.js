@@ -3,19 +3,35 @@ import Route from "../models/Route.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-// 1. Register a new driver
+// 1. Register a new driver with optional route configuration
 export const registerDriver = async (req, res) => {
   try {
-    const { name, phone, password } = req.body;
+    const { name, phone, password, routeId, startTime, endTime, stops, routeData } = req.body;
 
     if (!name || !phone || !password) {
       return res.status(400).json({ message: 'All fields (name, phone, password) are required.' });
     }
 
+    const cleanPhone = phone.trim();
     // Check if driver already exists
-    const existingDriver = await Driver.findOne({ phone: phone.trim() });
+    const existingDriver = await Driver.findOne({ phone: cleanPhone });
     if (existingDriver) {
       return res.status(400).json({ message: 'Driver with this phone already exists' });
+    }
+
+    // Determine route fields if passed directly or inside routeData
+    const finalRouteId = (routeId || (routeData && routeData.routeId) || '').trim();
+    const finalStartTime = startTime || (routeData && routeData.startTime) || '';
+    const finalEndTime = endTime || (routeData && routeData.endTime) || '';
+    const rawStops = stops || (routeData && routeData.stops) || [];
+    const finalStops = Array.isArray(rawStops) ? rawStops.map(s => s.trim()).filter(Boolean) : [];
+
+    // If routeId is provided, verify uniqueness
+    if (finalRouteId) {
+      const existingRoute = await Route.findOne({ routeId: finalRouteId });
+      if (existingRoute) {
+        return res.status(400).json({ message: `Route ID / Bus Number '${finalRouteId}' is already assigned to another driver.` });
+      }
     }
 
     // Hash the password
@@ -25,12 +41,43 @@ export const registerDriver = async (req, res) => {
     // Create and save the new driver
     const newDriver = new Driver({
       name: name.trim(),
-      phone: phone.trim(),
+      phone: cleanPhone,
       password: hashedPassword
     });
     await newDriver.save();
 
-    res.status(201).json({ message: 'Driver registered successfully!' });
+    let createdRoute = null;
+    // Create Route record in MongoDB if route details were provided
+    if (finalRouteId && finalStops.length > 0) {
+      createdRoute = new Route({
+        routeId: finalRouteId,
+        driver: newDriver._id,
+        startTime: finalStartTime,
+        endTime: finalEndTime,
+        stops: finalStops
+      });
+      await createdRoute.save();
+    }
+
+    // Generate JWT Token
+    const jwtSecret = process.env.JWT_SECRET || 'super_secret_fallback_key';
+    const token = jwt.sign({ id: newDriver._id, role: 'driver' }, jwtSecret, { expiresIn: '7d' });
+
+    res.status(201).json({
+      message: 'Driver registered successfully!',
+      token,
+      driver: {
+        id: newDriver._id,
+        name: newDriver.name,
+        phone: newDriver.phone
+      },
+      routeConfig: createdRoute ? {
+        routeId: createdRoute.routeId,
+        startTime: createdRoute.startTime,
+        endTime: createdRoute.endTime,
+        stops: createdRoute.stops
+      } : null
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error during registration' });
