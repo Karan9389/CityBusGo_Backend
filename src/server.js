@@ -50,11 +50,25 @@ app.use('/api/admin', adminRoutes);
 
 // Basic Health Check & Welcome Endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'CityBusGo Backend Server is running' });
+  res.json({ status: 'ok', message: 'CityBusGo Backend Server is running', timestamp: new Date() });
 });
 
 app.get('/', (req, res) => {
   res.send('Welcome to the CityBus-Go API !');
+});
+
+// 404 Handler
+app.use((req, res, next) => {
+  res.status(404).json({ message: `API endpoint '${req.originalUrl}' not found` });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled server error:', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  });
 });
 
 // Socket.io Setup

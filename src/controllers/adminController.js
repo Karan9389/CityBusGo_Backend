@@ -141,6 +141,11 @@ export const createDriver = async (req, res) => {
 
     let routeConfig = null;
     if (routeId && startTime && endTime && stops && Array.isArray(stops)) {
+      const existingRoute = await Route.findOne({ routeId: routeId.trim() });
+      if (existingRoute) {
+        return res.status(400).json({ message: `Route ID '${routeId.trim()}' is already assigned to another driver.` });
+      }
+
       const newRoute = new Route({
         routeId: routeId.trim(),
         driver: newDriver._id,
@@ -200,15 +205,21 @@ export const updateDriver = async (req, res) => {
     let route = await Route.findOne({ driver: id });
 
     if (routeId && startTime && endTime && stops && Array.isArray(stops)) {
+      const cleanedRouteId = routeId.trim();
+      const existingRoute = await Route.findOne({ routeId: cleanedRouteId, driver: { $ne: id } });
+      if (existingRoute) {
+        return res.status(400).json({ message: `Route ID '${cleanedRouteId}' is already assigned to another driver.` });
+      }
+
       if (route) {
-        route.routeId = routeId.trim();
+        route.routeId = cleanedRouteId;
         route.startTime = startTime;
         route.endTime = endTime;
         route.stops = stops.map(s => s.trim());
         await route.save();
       } else {
         route = new Route({
-          routeId: routeId.trim(),
+          routeId: cleanedRouteId,
           driver: id,
           startTime,
           endTime,
@@ -254,5 +265,33 @@ export const deleteDriver = async (req, res) => {
   } catch (error) {
     console.error('Error deleting driver:', error);
     res.status(500).json({ message: 'Server error while deleting driver' });
+  }
+};
+
+// Get Admin System Dashboard Stats
+export const getAdminStats = async (req, res) => {
+  try {
+    const totalDrivers = await Driver.countDocuments();
+    const totalRoutes = await Route.countDocuments();
+    const liveBuses = await Route.countDocuments({ isLive: true });
+    
+    // Total unique stops covered across all routes
+    const routes = await Route.find().select('stops');
+    const allStopsSet = new Set();
+    routes.forEach(r => {
+      if (Array.isArray(r.stops)) {
+        r.stops.forEach(s => allStopsSet.add(s.trim().toLowerCase()));
+      }
+    });
+
+    res.status(200).json({
+      totalDrivers,
+      totalRoutes,
+      liveBuses,
+      totalStopsCovered: allStopsSet.size
+    });
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    res.status(500).json({ message: 'Server error while fetching stats' });
   }
 };

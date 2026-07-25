@@ -36,5 +36,9 @@ const routeSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+routeSchema.index({ routeId: 1 });
+routeSchema.index({ stops: 1 });
+routeSchema.index({ isLive: 1 });
+
 const Route = mongoose.model('Route', routeSchema);
 export default Route;

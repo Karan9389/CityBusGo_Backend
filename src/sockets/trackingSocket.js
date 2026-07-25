@@ -66,6 +66,20 @@ export const setupTrackingSocket = (io) => {
       console.log(`🚪 Device ${socket.id} left tracking room: ${roomName}`);
     });
 
+    // Driver starting route tracking
+    socket.on('driver_start_tracking', async (routeId) => {
+      if (!routeId) return;
+      const roomName = `route_${routeId}`;
+      io.to(roomName).emit('bus_status_change', { routeId, isLive: true });
+
+      try {
+        await Route.findOneAndUpdate({ routeId }, { isLive: true });
+        console.log(`📡 Route ${routeId} marked as LIVE by driver`);
+      } catch (err) {
+        console.error('Error updating route live status on start:', err.message);
+      }
+    });
+
     // Driver stopping route tracking
     socket.on('driver_stop_tracking', async (routeId) => {
       if (!routeId) return;
@@ -74,6 +88,7 @@ export const setupTrackingSocket = (io) => {
 
       try {
         await Route.findOneAndUpdate({ routeId }, { isLive: false });
+        console.log(`⏹️ Route ${routeId} marked as OFF-LINE by driver`);
       } catch (err) {
         console.error('Error updating route live status on stop:', err.message);
       }

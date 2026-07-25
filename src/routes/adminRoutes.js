@@ -5,7 +5,8 @@ import {
   getDriverById, 
   createDriver, 
   updateDriver, 
-  deleteDriver 
+  deleteDriver,
+  getAdminStats
 } from '../controllers/adminController.js';
 import { verifyAdminToken } from '../middlewares/authMiddleware.js';
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post('/login', adminLogin);
 
 // Protected admin routes
+router.get('/stats', verifyAdminToken, getAdminStats);
 router.get('/drivers', verifyAdminToken, getAllDrivers);
 router.get('/drivers/:id', verifyAdminToken, getDriverById);
 router.post('/drivers', verifyAdminToken, createDriver);

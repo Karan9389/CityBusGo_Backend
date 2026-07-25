@@ -137,3 +137,20 @@ export const getRouteConfig = async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching route config' });
   }
 };
+
+// Delete driver's route configuration
+export const deleteRouteConfig = async (req, res) => {
+  try {
+    const driverId = req.driver._id;
+    const deletedRoute = await Route.findOneAndDelete({ driver: driverId });
+
+    if (!deletedRoute) {
+      return res.status(404).json({ message: 'No route configuration found to delete.' });
+    }
+
+    res.status(200).json({ message: 'Route configuration deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting route config:', error);
+    res.status(500).json({ message: 'Server error while deleting route config' });
+  }
+};

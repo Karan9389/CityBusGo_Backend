@@ -80,6 +80,9 @@ export const registerDriver = async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Phone number or route ID already registered.' });
+    }
     res.status(500).json({ message: 'Server error during registration' });
   }
 };
@@ -132,3 +135,6 @@ export const logindriver = async (req, res) => {
     res.status(500).json({ message: 'Server error during login' });
   }
 };
+
+// Alias export for standard naming convention
+export const loginDriver = logindriver;

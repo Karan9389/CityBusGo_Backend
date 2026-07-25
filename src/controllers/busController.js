@@ -1,26 +1,47 @@
 import Route from '../models/Route.js';
 
-// Search buses by starting location and destination
+// Search buses by starting location, destination, or general query
 export const searchBuses = async (req, res) => {
   try {
-    const { start, destination } = req.query;
-
-    if (!start || !destination) {
-      return res.status(400).json({ message: 'Both start and destination query parameters are required.' });
-    }
-
-    const startLower = start.toLowerCase().trim();
-    const destLower = destination.toLowerCase().trim();
+    const { start, destination, q, query } = req.query;
+    const searchTerm = (q || query || '').toLowerCase().trim();
 
     const routes = await Route.find().populate('driver', 'name phone');
 
     const matchingBuses = routes.filter(route => {
       const stopsLower = route.stops.map(s => s.toLowerCase().trim());
-      const startIndex = stopsLower.findIndex(s => s.includes(startLower) || startLower.includes(s));
-      const destIndex = stopsLower.findIndex(s => s.includes(destLower) || destLower.includes(s));
-      
-      // Valid route if both stops exist and origin is before destination (or equal if user entered exact stop name match)
-      return startIndex !== -1 && destIndex !== -1 && startIndex < destIndex;
+      const routeIdLower = (route.routeId || '').toLowerCase().trim();
+
+      // Case 1: Both start and destination specified
+      if (start && destination) {
+        const startLower = start.toLowerCase().trim();
+        const destLower = destination.toLowerCase().trim();
+
+        const startIndex = stopsLower.findIndex(s => s.includes(startLower) || startLower.includes(s));
+        const destIndex = stopsLower.findIndex(s => s.includes(destLower) || destLower.includes(s));
+        
+        return startIndex !== -1 && destIndex !== -1 && startIndex < destIndex;
+      }
+
+      // Case 2: Only start specified
+      if (start) {
+        const startLower = start.toLowerCase().trim();
+        return stopsLower.some(s => s.includes(startLower) || startLower.includes(s));
+      }
+
+      // Case 3: Only destination specified
+      if (destination) {
+        const destLower = destination.toLowerCase().trim();
+        return stopsLower.some(s => s.includes(destLower) || destLower.includes(s));
+      }
+
+      // Case 4: Search term (bus number or stop) specified
+      if (searchTerm) {
+        return routeIdLower.includes(searchTerm) || stopsLower.some(s => s.includes(searchTerm));
+      }
+
+      // Case 5: No search parameters provided -> return all
+      return true;
     });
 
     const result = matchingBuses.map(r => ({
