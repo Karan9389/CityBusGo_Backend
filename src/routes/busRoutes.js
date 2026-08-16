@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/search', searchBuses);
 router.get('/all', getAllBuses);
-router.get('/:routeId', getBusByRouteId);
 router.get('/', getAllBuses);
+router.get('/:routeId', getBusByRouteId);
 
 export default router;
