@@ -88,7 +88,7 @@ export const registerDriver = async (req, res) => {
 };
 
 // 2. Login an existing driver
-export const logindriver = async (req, res) => {
+export const loginDriver = async (req, res) => {
   try {
     const { phone, password } = req.body;
 
@@ -135,6 +135,3 @@ export const logindriver = async (req, res) => {
     res.status(500).json({ message: 'Server error during login' });
   }
 };
-
-// Alias export for standard naming convention
-export const loginDriver = logindriver;
