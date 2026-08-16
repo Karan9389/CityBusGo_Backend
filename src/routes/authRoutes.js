@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerDriver, logindriver } from '../controllers/authController.js';
+import { registerDriver, loginDriver } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -9,6 +9,6 @@ const router = express.Router();
 router.post('/register', registerDriver);
 
 //POST /api/auth/login
-router.post('/login', logindriver);
+router.post('/login', loginDriver);
 
 export default router;
