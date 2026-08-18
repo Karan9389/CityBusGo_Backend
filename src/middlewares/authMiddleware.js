@@ -39,18 +39,24 @@ export const verifyAdminToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, jwtSecret);
 
-    if (decoded.role === 'admin') {
+    // Check if it's an environment admin (role-based token)
+    if (decoded.role === 'admin' && decoded.username) {
       req.admin = decoded;
       return next();
     }
 
-    const admin = await Admin.findById(decoded.id).select('-password');
-    if (!admin) {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    // Otherwise, check database for admin user
+    if (decoded.id) {
+      const admin = await Admin.findById(decoded.id).select('-password');
+      if (!admin) {
+        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+      }
+
+      req.admin = admin;
+      return next();
     }
 
-    req.admin = admin;
-    next();
+    return res.status(403).json({ message: 'Invalid admin token structure.' });
   } catch (error) {
     console.error('Admin auth verification error:', error.message);
     return res.status(401).json({ message: 'Invalid or expired admin token.' });
